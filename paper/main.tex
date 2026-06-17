@@ -52,9 +52,12 @@ underwriting, wellness-program design, and the uncertainty margins required unde
 modern solvency and reporting regimes. We show that priors are essential for
 identifiability rather than cosmetic: on monotone-risk markers the
 maximum-likelihood estimator collapses the quadratic term, while
-weakly-informative priors recover a stable, interpretable fit. The methods are
-implemented in \texttt{R}, validated by simulation, and illustrated on publicly
-available longitudinal survival data.
+weakly-informative priors recover a stable, interpretable fit. The contribution is
+not the quadratic-hazard form, which is established, but its Bayesian actuarial
+treatment---coherent posterior uncertainty for the optimal biomarker level and for
+dynamic risk forecasts, with the regularization that renders the optimum
+identifiable. The methods are implemented in \texttt{R}, validated by simulation,
+and illustrated on publicly available longitudinal survival data.
 \end{abstract}
 
 \begin{keyword}
@@ -120,6 +123,13 @@ every derived quantity, it regularizes weakly-identified components through
 priors, and---as we show---it is in fact \emph{necessary} for identifiability when
 the marker's risk is close to monotone, a regime in which the maximum-likelihood
 estimator degenerates.
+
+The novelty is therefore not the quadratic-hazard form, which is established in
+biodemography and has appeared in the actuarial literature in frequentist form;
+it is \emph{Bayesian actuarial inference} for the stochastic process model:
+coherent posterior uncertainty for the optimal biomarker level $\fzero(t)$ and for
+dynamic risk forecasts, and the regularization that renders the optimum
+identifiable in the near-monotone regimes common in practice.
 
 \paragraph{Contributions.} We make four contributions.
 \begin{enumerate}
@@ -292,8 +302,20 @@ the AIC used in earlier frequentist SPM work.
 %====================================================================
 \section{Actuarial quantities}\label{sec:actuarial}
 
-The posterior over $\theta$ induces posteriors over every quantity an actuary
-would report; we highlight three.
+A proportional-hazards regression on the marker, or a standard
+shared-random-effects joint model, returns a single monotone association and a
+relative risk: it does not locate an optimum, does not separate sensitivity to
+deviation ($Q$) from recovery capacity ($a$), and propagates no uncertainty into
+the optimum because none is estimated. The present model instead supplies, for a
+biomarker-exposed portfolio and with coherent posterior uncertainty throughout:
+(i) an age-specific optimal level $\fzero(t)$---an underwriting target and the
+reference point for wellness-incentive design; (ii) the force of mortality as an
+explicit function of deviation from that optimum, the basis for risk-class
+definition and portfolio what-if analysis; (iii) dynamically updated
+survival/hazard forecasts as new measurements arrive, the input to in-force
+re-underwriting; and (iv) the uncertainty in all of these, the input to a risk
+margin or risk adjustment. The posterior over $\theta$ induces these quantities
+directly; we detail three.
 
 \paragraph{(a) The optimal level and its uncertainty.} The trajectory
 $\fzero(t)=a_{f_0}+b_{f_0}(t-t_{\min})$ is a linear functional of $\theta$, so its
@@ -374,9 +396,11 @@ $0.99$ probability of surviving from age $65$ to $85$, falling to $0.40$ at one
 standard deviation and $0.03$ at two.
 
 \begin{table}[t]\centering
-\caption{Posterior-predictive probability of surviving from age 65 to 85 by
-deviation from the optimal marker level (median [95\% credible interval]),
-simulated cohort.}
+\caption{An actuarial selection quantity: posterior-predictive probability of
+surviving from age 65 to 85 by deviation from the optimal marker level (median
+[95\% credible interval]), simulated cohort. Read as a risk-class / pricing
+differential---each half standard deviation of deviation from the optimum carries
+a quantified, uncertainty-bracketed mortality cost.}
 \label{tab:survdev}
 \begin{tabular}{lc}
 \toprule
@@ -511,10 +535,13 @@ literature it provides the Bayesian counterpart to the frequentist SPM
 
 \paragraph{Actuarial implications.} The framework supplies, for a biomarker-exposed
 portfolio, both a central estimate and a coherent uncertainty for each individual's
-risk. This is the input to a Solvency~II risk margin (cost-of-capital on
-non-hedgeable biometric risk) and to the IFRS~17 risk adjustment, both of which
-require a quantification of uncertainty in the biometric assumptions rather than a
-point estimate \citep{EnglandVerrallWuthrich2019}; it supports dynamic underwriting,
+risk. Concretely, propagating the posterior over $\theta$ through the portfolio's
+mortality/morbidity cash flows yields a predictive distribution of liabilities
+whose dispersion is the non-hedgeable biometric risk; a cost-of-capital charge on
+that dispersion is a Solvency~II risk margin, and a chosen quantile or
+cost-of-capital quantity of it is an IFRS~17 risk adjustment, neither of which a
+point estimate can supply \citep{EnglandVerrallWuthrich2019}. The same posterior
+supports dynamic underwriting,
 in which risk is re-evaluated as measurements arrive; and it formalizes
 wellness-incentive design through the estimated optimum and the priced cost of
 deviation in Table~\ref{tab:survdev}.
@@ -524,9 +551,8 @@ age-linear components; multivariate markers, covariate-dependent components (for
 underwriting factors and genetic risk), nonsymmetric U-shapes, and calendar-time or
 cohort effects for forecasting are natural and fit within the same marginalized
 likelihood. Scaling the sampler to large portfolios benefits from vectorizing the
-per-individual recursion. The companion paper applies the methodology to the
-Cardiovascular Health Study, where the marker (BMI, blood pressure, or glucose)
-exhibits a genuine U-shape and a genetic underwriting factor is available.
+per-individual recursion. A companion paper scales the methodology to a large cardiovascular cohort with
+multiple correlated markers and a genetic underwriting factor.
 
 %====================================================================
 \appendix
