@@ -51,8 +51,11 @@ R/
   03_fit_tmbstan.R     Bayesian fit (NUTS via tmbstan) + credible bands on f0(t).
   04_plot_f0.R         Plot: Bayesian credible band vs ML vs truth for f0(t).
   05_risk_prediction.R Posterior-predictive risk/survival with credible bands.
-  06_realdata_pbc.R    First real-data fit: SPM on PBC sequential data
-                       (survival::pbcseq), log-bilirubin vs death.
+  06_realdata_pbc.R    Real-data fit: SPM on PBC sequential data
+                       (survival::pbcseq), log-bilirubin vs death (monotone).
+  07_calibration.R     Frequentist coverage study over replicate cohorts.
+  08_realdata_nafld.R  Real-data fit: SPM on NAFLD systolic blood pressure
+                       (survival::nafld) vs death (U-shaped; interior optimum).
 refs/                  Source paper.
 output/                Generated artifacts (*.rds git-ignored); figures/ committed.
 ```
@@ -87,9 +90,11 @@ ODE substeps, and sampler iterations.
 - [x] Bayesian engine (tmbstan); **credible bands on `f0(t)` cover truth**, priors
       regularize weakly-identified baseline-hazard parameters
 - [x] Posterior-predictive risk / survival with uncertainty
-- [x] First real-data fit (PBC / `pbcseq`): converges to a sensible,
-      non-degenerate solution under MAP (priors prevent the quadratic term
-      from collapsing); `f0(t)` lands at the low-bilirubin end as expected
+- [x] Real-data illustrations on two public cohorts: NAFLD systolic blood
+      pressure (`survival::nafld`) shows a genuine U-shape with a firmly
+      identified interior optimum (~138 mmHg [137, 139]); PBC bilirubin
+      (`pbcseq`) is a monotone stress test where MLE collapses and MAP recovers
+      a low-boundary optimum with wide bands
 - [ ] Performance pass (vectorize likelihood) + full-scale production run
 - [ ] Bayesian (NUTS) fit on real data; case study (CHS)
 - [ ] Covariate stratification (e.g. genetic risk factor) of `f0/Q/a`

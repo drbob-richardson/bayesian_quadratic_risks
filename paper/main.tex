@@ -150,9 +150,10 @@ term, whereas weakly-informative priors recover a stable and interpretable fit.
 \end{enumerate}
 The methods are implemented in \texttt{R} using automatic differentiation
 (\texttt{RTMB}) and Hamiltonian Monte Carlo (\texttt{tmbstan})
-\citep{TMB2016,RTMB,tmbstan2018}, validated by simulation, and illustrated on the
-publicly available PBC data. A companion paper applies the methodology to the
-Cardiovascular Health Study under restricted access.
+\citep{TMB2016,RTMB,tmbstan2018}, validated by simulation, and illustrated on two
+public cohorts spanning U-shaped (blood pressure) and monotone (bilirubin)
+biomarker risk. A companion paper applies the methodology to a large cardiovascular
+cohort under restricted access.
 
 %====================================================================
 \section{The model}\label{sec:model}
@@ -477,17 +478,59 @@ $\tau$     & $0.964\ (0.013)$ & & \\
 \end{table}
 
 %====================================================================
-\section{Illustration: longitudinal survival data}\label{sec:pbc}
+\section{Illustrations on public data}\label{sec:apps}
 
-We illustrate the methodology on the Mayo Clinic primary biliary cholangitis
-(PBC) sequential data \citep[\texttt{survival::pbcseq};][]{Rizopoulos2016}, a
-standard public benchmark for joint longitudinal--survival modelling. We take
-log serum bilirubin (standardized) as the marker, death as the event, and age as
-the time scale; after restricting to subjects with at least two measurements the
-analysis comprises $285$ subjects, $122$ deaths, and $1918$ measurements (median
-six per subject) over ages $26$--$85$. Bilirubin is a severity marker whose risk
-is essentially monotone, providing a deliberate stress test of the model's
-behaviour away from a clean U-shape.
+We illustrate the methodology on two public, fully reproducible cohorts that span
+the two regimes of interest: a biomarker with a genuine U-shaped mortality risk
+(systolic blood pressure), where the model locates an interior optimum, and a
+monotone-risk marker (serum bilirubin), which serves as a stress test. Both ship
+with the \texttt{R} \texttt{survival} package, so the analyses can be reproduced
+without restricted data.
+
+\subsection{A U-shaped marker: blood pressure and mortality}\label{sec:nafld}
+
+We use the NAFLD cohort \citep[\texttt{survival::nafld};][]{survivalR}, taking
+systolic blood pressure (SBP, standardized) as the marker, death as the event, and
+age as the time scale. SBP is a textbook J-/U-shaped mortality marker---both low
+and high pressure carry excess risk---and a routine underwriting variable. We
+average repeated SBP readings within each one-year window to suppress
+visit-to-visit measurement noise, retain subjects with at least three such yearly
+values, and analyse a subsample of $2{,}991$ subjects with $519$ deaths and
+$14{,}306$ measurements over ages $14$--$101$.
+
+The model identifies the U-shape cleanly. The curvature is firmly positive and
+bounded away from zero ($\hat a_Q=0.030$, SE $0.002$), in sharp contrast to the
+monotone case below, and the estimated risk-minimizing level is an interior
+optimum of $138$\,mmHg with a tight interval ($95\%$ CI $[137,139]$;
+Figure~\ref{fig:nafld}). We report the confound-free specification with an
+age-constant optimum and curvature: the age-\emph{trends} of the optimum and of
+the curvature are only weakly identified from these data and are mutually
+confounded (freeing both flips the sign of the optimum's age-slope), so an
+age-constant summary is the honest one. The remaining components---mean reversion
+$\hat a(t_{\min})=-0.45$ (SE $0.04$) and an age-increasing drift---are all
+identified. This is the actuarially central case: a routinely underwritten marker
+for which the model returns a calibrated optimal level and a quantified cost of
+deviation.
+
+\begin{figure}[t]\centering
+\includegraphics[width=0.95\textwidth]{nafld_f0_sbp.png}
+\caption{NAFLD cohort, systolic blood pressure. (A) Estimated hazard as a function
+of SBP at age 60 (the U-shape), with the risk-minimizing optimum and its $95\%$
+interval. (B) Observed SBP over age with the estimated optimal level and band.}
+\label{fig:nafld}
+\end{figure}
+
+\subsection{A monotone marker: a stress test}\label{sec:pbc}
+
+We contrast this with the Mayo Clinic primary biliary cholangitis (PBC) sequential
+data \citep[\texttt{survival::pbcseq};][]{survivalR}, a standard public
+benchmark for joint longitudinal--survival modelling \citep{Rizopoulos2016}. We take log serum bilirubin
+(standardized) as the marker, death as the event, and age as the time scale; after
+restricting to subjects with at least two measurements the analysis comprises $285$
+subjects, $122$ deaths, and $1918$ measurements (median six per subject) over ages
+$26$--$85$. Bilirubin is a severity marker whose risk is essentially monotone,
+providing a deliberate stress test of the model's behaviour away from a clean
+U-shape.
 
 The maximum-likelihood estimator collapses, exactly as anticipated in
 Section~\ref{sec:bayes}: the curvature is driven to the boundary
