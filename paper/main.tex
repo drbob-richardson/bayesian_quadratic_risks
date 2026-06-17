@@ -70,10 +70,12 @@ Bayesian inference \sep Uncertainty quantification \sep Underwriting
 
 Life and health insurers have moved decisively toward pricing and underwriting on
 biological information. Accelerated underwriting programs draw on laboratory
-panels, electronic health records, and increasingly on wearable-device streams;
-health, long-term-care, and critical-illness products are exposed to the
-trajectories of risk factors such as body mass index (BMI), blood pressure,
-glycaemia, and lipids. A common feature of these markers is that risk is
+panels, electronic health records, and increasingly on wearable-device streams,
+fuelled by rapid adoption of predictive analytics across the actuarial control
+cycle \citep{Richman2021}; health, long-term-care, and critical-illness products
+are exposed to the trajectories of risk factors such as body mass index (BMI),
+blood pressure, glycaemia, and lipids, and to their links with morbidity onset
+\citep{HabermanPitacco1999}. A common feature of these markers is that risk is
 \emph{not} monotone in the marker value: both low and high BMI carry excess
 mortality, blood pressure exhibits J-shaped associations, and similar U- or
 J-shaped relationships are documented across a range of physiological indices.
@@ -81,14 +83,19 @@ J-shaped relationships are documented across a range of physiological indices.
 This feature sits awkwardly with the actuary's standard toolkit. Proportional
 hazards and generalized linear models encode a marker through a linear predictor
 and therefore impose a monotone, multiplicative effect on the force of mortality;
-aggregate mortality models such as Lee--Carter operate at the population level and
-do not use individual marker dynamics at all. Capturing a U-shape within a
+aggregate mortality models such as Lee--Carter \citep{LeeCarter1992} operate at the
+population level and do not use individual marker dynamics at all. Capturing a U-shape within a
 proportional-hazards model requires \emph{ad hoc} basis expansions whose
 coefficients carry no direct interpretation, and none of these approaches makes
 use of the information in the \emph{dynamics} of a repeatedly measured marker:
 its trend, its volatility, and the speed with which it returns to equilibrium
 after a perturbation. Yet these dynamics are exactly what longitudinal insurance
-data---irregularly spaced, frequently missing---contain.
+data---irregularly spaced, frequently missing---contain. The actuarial literature
+has long accommodated population heterogeneity through frailty models, in which an
+\emph{unobserved} multiplier scales the force of mortality
+\citep{VaupelMantonStallard1979,SuSherris2012,Pitacco2019}; the approach developed
+here is complementary, modelling the dynamics of an \emph{observed} marker and the
+shape of its relationship with risk.
 
 The stochastic process model (SPM), or quadratic-hazard model, developed in
 biodemography \citep{WoodburyManton1977,Yashin2007,Yashin2012PLR} addresses these
@@ -505,10 +512,12 @@ literature it provides the Bayesian counterpart to the frequentist SPM
 \paragraph{Actuarial implications.} The framework supplies, for a biomarker-exposed
 portfolio, both a central estimate and a coherent uncertainty for each individual's
 risk. This is the input to a Solvency~II risk margin (cost-of-capital on
-non-hedgeable biometric risk) and to the IFRS~17 risk adjustment; it supports
-dynamic underwriting, in which risk is re-evaluated as measurements arrive; and it
-formalizes wellness-incentive design through the estimated optimum and the priced
-cost of deviation in Table~\ref{tab:survdev}.
+non-hedgeable biometric risk) and to the IFRS~17 risk adjustment, both of which
+require a quantification of uncertainty in the biometric assumptions rather than a
+point estimate \citep{EnglandVerrallWuthrich2019}; it supports dynamic underwriting,
+in which risk is re-evaluated as measurements arrive; and it formalizes
+wellness-incentive design through the estimated optimum and the priced cost of
+deviation in Table~\ref{tab:survdev}.
 
 \paragraph{Limitations and extensions.} We modelled a single biomarker with
 age-linear components; multivariate markers, covariate-dependent components (for
