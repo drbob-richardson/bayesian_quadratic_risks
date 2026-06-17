@@ -477,6 +477,33 @@ $\tau$     & $0.964\ (0.013)$ & & \\
 \end{tabular}
 \end{table}
 
+\paragraph{Comparison with standard models.} To make the contribution concrete we
+contrast the SPM with conventional alternatives on the same simulated cohort,
+entering each subject's last observed marker as a time-fixed covariate
+(Figure~\ref{fig:compare}). A Cox model with a \emph{linear} marker returns a
+significant but monotone effect ($\hat\beta=0.27$, $p<0.001$): it imposes
+``more is worse'' and is blind to the lower arm of the U, the regime in which low
+values are also hazardous. A Cox model with a penalized-spline marker recovers the
+U-shape, but only as a static snapshot of the last measurement---it treats the
+noisy marker as exact, ignores the longitudinal dynamics, and yields no
+interpretable optimum with quantified uncertainty (one must read a minimum off the
+fitted curve and bootstrap for an interval). The SPM estimates the risk-minimizing
+level directly, $\hat\fzero=0.01$ $[-0.07,0.09]$ against a truth of $0$, with a
+credible interval and using the entire trajectory and its measurement error. The
+distinction from flexible (spline) joint models is therefore not the ability to
+bend, but the interpretable, uncertainty-quantified \emph{optimum} and the use of
+the marker's dynamics.
+
+\begin{figure}[t]\centering
+\includegraphics[width=0.82\textwidth]{method_comparison.png}
+\caption{Estimated log relative hazard as a function of the marker on the simulated
+cohort. A linear Cox model (monotone) misses the lower arm; a penalized-spline Cox
+model recovers the shape but offers no uncertainty-quantified optimum and ignores
+the trajectory; the SPM returns the optimum $\fzero$ with a 95\% interval (truth at
+$0$).}
+\label{fig:compare}
+\end{figure}
+
 %====================================================================
 \section{Illustrations on public data}\label{sec:apps}
 

@@ -167,20 +167,21 @@ cat(sprintf("\nDynamic prediction (landmark age %d): event id=%d, censored id=%d
 
 pe <- predict_indiv(ev_id, landmark=LANDMARK)
 pc <- predict_indiv(ce_id, landmark=LANDMARK)
-png("output/figures/dynamic_prediction.png", width = 1700, height = 850, res = 200)
-par(mfrow=c(1,2), mar=c(4.3,4.3,3,1))
+png("output/figures/dynamic_prediction.png", width = 1800, height = 900, res = 220)
+par(mfrow=c(1,2), mar=c(4.5,4.6,3.2,1), cex.lab=1.15, cex.axis=1.02,
+    cex.main=1.15, mgp=c(2.8,0.8,0))
 draw_one <- function(pp, ttl) {
   plot(pp$pg, pp$qb[1,], type="n", ylim=c(0,1), xlim=c(min(pp$ag),95),
        xlab="Age (years)", ylab="Conditional survival  S(t | history)", main=ttl)
   polygon(c(pp$pg,rev(pp$pg)), c(pp$qb[2,],rev(pp$qb[3,])),
           col=adjustcolor("steelblue",0.25), border=NA)
-  lines(pp$pg, pp$qb[1,], col="steelblue", lwd=2.5)
-  abline(v=pp$tlast, col="grey60", lty=3)            # last observation
-  rug(pp$ag, col="grey40")                            # observation ages
-  if (pp$status==1) { abline(v=pp$time, col="firebrick", lwd=2)
-    text(pp$time, 0.05, "event", col="firebrick", pos=4, cex=.8) }
-  else { abline(v=pp$time, col="darkgreen", lwd=2, lty=2)
-    text(pp$time, 0.05, "censored", col="darkgreen", pos=2, cex=.8) }
+  lines(pp$pg, pp$qb[1,], col="steelblue", lwd=3)
+  abline(v=pp$tlast, col="grey55", lty=3, lwd=1.5)   # landmark / last observation
+  rug(pp$ag, col="grey35", lwd=1.5)                  # observation ages
+  if (pp$status==1) { abline(v=pp$time, col="firebrick", lwd=2.5)
+    text(pp$time, 0.06, "event", col="firebrick", pos=4, cex=.95, font=2) }
+  else { abline(v=pp$time, col="darkgreen", lwd=2.5, lty=2)
+    text(pp$time, 0.06, "censored", col="darkgreen", pos=2, cex=.95, font=2) }
 }
 draw_one(pe, sprintf("Individual %d (had event)", ev_id))
 draw_one(pc, sprintf("Individual %d (censored)", ce_id))
