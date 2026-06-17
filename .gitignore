@@ -1,0 +1,28 @@
+# --- R session / IDE cruft ---
+.Rhistory
+.RData
+.Rproj.user/
+.Ruserdata
+*.Rproj
+
+# --- macOS / editor ---
+.DS_Store
+*~
+
+# --- generated model artifacts (large, regenerable by re-running R/) ---
+output/*.rds
+
+# Keep committed figures (output/figures/*.png) and the .gitkeep placeholders.
+!output/figures/
+
+# --- RESTRICTED / SENSITIVE DATA -- never commit ---
+# CHS (Cardiovascular Health Study) is governed by a Data Use Agreement and
+# must not be redistributed. Exclude the whole data folder and any raw data.
+data/
+*.csv
+*.sas7bdat
+*.dta
+*.xpt
+
+# Avoid redistributing the publisher PDF (cited in README instead).
+refs/*.pdf
