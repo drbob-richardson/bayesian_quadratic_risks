@@ -1,0 +1,141 @@
+%% Paper 1 -- Insurance: Mathematics and Economics (IME)
+%% Elsevier elsarticle template. Compile: pdflatex; bibtex; pdflatex x2.
+\documentclass[review,3p,times]{elsarticle}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\graphicspath{{../output/figures/}}
+\usepackage[hidelinks]{hyperref}
+
+\newtheorem{proposition}{Proposition}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\E}{\mathbb{E}}
+
+\journal{Insurance: Mathematics and Economics}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{A Bayesian quadratic-hazard model for biomarker-driven mortality
+and morbidity risk: optimal health levels with uncertainty}
+
+\author[byu]{R. Richardson}
+\author[bio]{[Biologist co-author]} % Paper 2 lead; advisory here if appropriate
+\address[byu]{Department of Statistics, Brigham Young University, Provo, UT, USA}
+\address[bio]{[Department], Brigham Young University, Provo, UT, USA}
+
+\begin{abstract}
+Insurers increasingly underwrite and price on repeatedly measured biological
+markers---body mass index, blood pressure, glucose, lipids---yet standard
+actuarial hazard models impose monotone or multiplicative marker effects that
+cannot capture the U- and J-shaped mortality and morbidity risks pervasive in
+epidemiology. We develop a Bayesian quadratic-hazard stochastic process model
+that jointly describes (i) the irregular longitudinal dynamics of a biomarker
+through a mean-reverting (Ornstein--Uhlenbeck) diffusion and (ii) a quadratic
+hazard whose minimum identifies an age-varying risk-minimizing level
+$f_0(t)$---a ``physiological optimum''---with curvature $Q(t)$ and mean-reversion
+$a(t)$ interpretable as stress-resistance and adaptive capacity. Estimation
+exploits the analytically marginalized likelihood, a Kalman-type moment recursion
+that integrates the quadratic hazard against the Gaussian latent state in closed
+form; we embed this in a Bayesian framework to obtain full posterior uncertainty.
+The treatment delivers (a) credible bands on the optimal trajectory $f_0(t)$ and
+the latent risk components, and (b) posterior-predictive, dynamically updated
+survival and hazard forecasts with coherent uncertainty---quantities of direct
+relevance to biomarker-based underwriting, wellness-program design, and the
+uncertainty margins required under modern solvency and reporting regimes. We show
+that priors are essential for identifiability rather than cosmetic: on
+monotone-risk markers the maximum-likelihood estimator collapses the quadratic
+term, while weakly-informative priors recover a stable, interpretable fit. The
+methods are implemented in \texttt{R}, validated by simulation, and illustrated
+on publicly available longitudinal survival data.
+\end{abstract}
+
+\begin{keyword}
+Longevity and mortality risk \sep Biomarkers \sep Joint models \sep
+Bayesian inference \sep Uncertainty quantification \sep Underwriting
+\MSC[2020] 91G05 \sep 62F15 \sep 62N02
+\end{keyword}
+
+\end{frontmatter}
+
+%====================================================================
+\section{Introduction}\label{sec:intro}
+% Biomarker/accelerated underwriting and health-insurance context.
+% Standard actuarial hazard models (PH-GLM, aggregate mortality) assume
+% monotone/multiplicative marker effects; epidemiology shows U-/J-shaped risk.
+% Longitudinal markers are irregular/missing; their dynamics carry risk info.
+% The need: joint biomarker--event modeling WITH uncertainty for risk margins.
+% Existing SPM/quadratic-hazard work is frequentist (NAAJ 2012, 2016); we give
+% the Bayesian formulation. Contributions (bullet list).
+
+%====================================================================
+\section{The model}\label{sec:model}
+The biomarker $Y(t)$ follows a mean-reverting diffusion
+\begin{equation}\label{eq:sde}
+  \dd Y(t) = a(t)\,\bigl[Y(t)-f_1(t)\bigr]\,\dd t + b(t)\,\dd W(t),
+\end{equation}
+and the force of mortality (or morbidity onset) is quadratic in the marker,
+\begin{equation}\label{eq:hazard}
+  \mu(t,Y) = \mu_0(t) + Q(t)\,\bigl[Y(t)-f_0(t)\bigr]^2 .
+\end{equation}
+% Actuarial interpretation: f0 = risk-minimizing ("optimal") level; Q =
+% sensitivity of risk to deviation (stress-resistance/robustness); a =
+% recovery rate (adaptive capacity); f1 = drift/allostatic mean; b = volatility.
+% State component parameterizations (linear-in-age etc.).
+
+%====================================================================
+\section{The marginalized likelihood}\label{sec:lik}
+\begin{proposition}\label{prop:recursion}
+% Conditional on survival and the observation history, the latent state remains
+% Gaussian with mean m(t), variance gamma(t) solving
+%   m'  = a(t)(m-f1) - 2 Q(t) gamma (m-f0),
+%   g'  = 2 a(t) gamma + b(t)^2 - 2 Q(t) gamma^2,
+% and the effective hazard given survival is mu0 + Q[(m-f0)^2 + gamma].
+\end{proposition}
+% Proof sketch / reference (Woodbury--Manton 1977; Yashin et al. 2007, 2012).
+% Observation update with measurement error tau (classic SPM = tau -> 0).
+% Likelihood contribution per subject; remark on irregular/missing data.
+
+%====================================================================
+\section{Bayesian inference}\label{sec:bayes}
+% Priors (weakly-informative) and the identifiability argument: MLE collapses
+% the quadratic term on monotone-risk data (aQ -> 0, singular information);
+% priors restore a stable, interpretable posterior. Computation: HMC/NUTS on
+% the marginal log-posterior (RTMB objective via tmbstan). Model comparison:
+% WAIC/PSIS-LOO in place of AIC.
+
+%====================================================================
+\section{Actuarial quantities}\label{sec:actuarial}
+% (a) Credible bands on f0(t): the optimal metric and its uncertainty.
+% (b) Posterior-predictive dynamic survival/hazard via landmarking.
+% (c) Survival / risk by deviation-from-optimal, with credible intervals.
+% Link each to an actuarial use: underwriting, reserving margin, wellness.
+
+%====================================================================
+\section{Simulation study}\label{sec:sim}
+% Parameter recovery; coverage/calibration of credible bands; the role of
+% priors for identifiability.
+
+%====================================================================
+\section{Illustration: longitudinal survival data}\label{sec:pbc}
+% PBC (survival::pbcseq): real, irregular, partially-missing data; MAP vs the
+% MLE collapse; estimated optimal marker trajectory on the natural scale.
+% Figure: pbc_f0_bilirubin.png.
+
+%====================================================================
+\section{Discussion}\label{sec:disc}
+% Risk margins (Solvency II) / risk adjustment (IFRS 17); wellness incentives;
+% limitations (single biomarker, parametric components); extensions
+% (multivariate markers, underwriting covariates, forecasting); pointer to the
+% CHS case study (companion paper).
+
+%====================================================================
+\section*{Acknowledgements}
+% Funding; data sources for the public illustration.
+
+\bibliographystyle{elsarticle-harv}
+\bibliography{refs}
+
+\end{document}
