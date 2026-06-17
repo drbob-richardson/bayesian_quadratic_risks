@@ -11,6 +11,10 @@
 \newtheorem{proposition}{Proposition}
 \newcommand{\dd}{\mathrm{d}}
 \newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\fzero}{f_0}
+\newcommand{\fone}{f_1}
 
 \journal{Insurance: Mathematics and Economics}
 
@@ -22,7 +26,7 @@
 and morbidity risk: optimal health levels with uncertainty}
 
 \author[byu]{R. Richardson}
-\author[bio]{[Biologist co-author]} % Paper 2 lead; advisory here if appropriate
+\author[bio]{[Co-author]}
 \address[byu]{Department of Statistics, Brigham Young University, Provo, UT, USA}
 \address[bio]{[Department], Brigham Young University, Provo, UT, USA}
 
@@ -35,21 +39,22 @@ epidemiology. We develop a Bayesian quadratic-hazard stochastic process model
 that jointly describes (i) the irregular longitudinal dynamics of a biomarker
 through a mean-reverting (Ornstein--Uhlenbeck) diffusion and (ii) a quadratic
 hazard whose minimum identifies an age-varying risk-minimizing level
-$f_0(t)$---a ``physiological optimum''---with curvature $Q(t)$ and mean-reversion
-$a(t)$ interpretable as stress-resistance and adaptive capacity. Estimation
-exploits the analytically marginalized likelihood, a Kalman-type moment recursion
-that integrates the quadratic hazard against the Gaussian latent state in closed
-form; we embed this in a Bayesian framework to obtain full posterior uncertainty.
-The treatment delivers (a) credible bands on the optimal trajectory $f_0(t)$ and
-the latent risk components, and (b) posterior-predictive, dynamically updated
-survival and hazard forecasts with coherent uncertainty---quantities of direct
-relevance to biomarker-based underwriting, wellness-program design, and the
-uncertainty margins required under modern solvency and reporting regimes. We show
-that priors are essential for identifiability rather than cosmetic: on
-monotone-risk markers the maximum-likelihood estimator collapses the quadratic
-term, while weakly-informative priors recover a stable, interpretable fit. The
-methods are implemented in \texttt{R}, validated by simulation, and illustrated
-on publicly available longitudinal survival data.
+$\fzero(t)$---a ``physiological optimum''---with curvature $Q(t)$ and
+mean-reversion $a(t)$ interpretable as stress-resistance and adaptive capacity.
+Estimation exploits the analytically marginalized likelihood, a Kalman-type
+moment recursion that integrates the quadratic hazard against the Gaussian latent
+state in closed form; we embed this recursion in a Bayesian framework to obtain
+full posterior uncertainty. The treatment delivers (a) credible bands on the
+optimal trajectory $\fzero(t)$ and the latent risk components, and (b)
+posterior-predictive, dynamically updated survival and hazard forecasts with
+coherent uncertainty---quantities of direct relevance to biomarker-based
+underwriting, wellness-program design, and the uncertainty margins required under
+modern solvency and reporting regimes. We show that priors are essential for
+identifiability rather than cosmetic: on monotone-risk markers the
+maximum-likelihood estimator collapses the quadratic term, while
+weakly-informative priors recover a stable, interpretable fit. The methods are
+implemented in \texttt{R}, validated by simulation, and illustrated on publicly
+available longitudinal survival data.
 \end{abstract}
 
 \begin{keyword}
@@ -62,74 +67,482 @@ Bayesian inference \sep Uncertainty quantification \sep Underwriting
 
 %====================================================================
 \section{Introduction}\label{sec:intro}
-% Biomarker/accelerated underwriting and health-insurance context.
-% Standard actuarial hazard models (PH-GLM, aggregate mortality) assume
-% monotone/multiplicative marker effects; epidemiology shows U-/J-shaped risk.
-% Longitudinal markers are irregular/missing; their dynamics carry risk info.
-% The need: joint biomarker--event modeling WITH uncertainty for risk margins.
-% Existing SPM/quadratic-hazard work is frequentist (NAAJ 2012, 2016); we give
-% the Bayesian formulation. Contributions (bullet list).
+
+Life and health insurers have moved decisively toward pricing and underwriting on
+biological information. Accelerated underwriting programs draw on laboratory
+panels, electronic health records, and increasingly on wearable-device streams;
+health, long-term-care, and critical-illness products are exposed to the
+trajectories of risk factors such as body mass index (BMI), blood pressure,
+glycaemia, and lipids. A common feature of these markers is that risk is
+\emph{not} monotone in the marker value: both low and high BMI carry excess
+mortality, blood pressure exhibits J-shaped associations, and similar U- or
+J-shaped relationships are documented across a range of physiological indices.
+
+This feature sits awkwardly with the actuary's standard toolkit. Proportional
+hazards and generalized linear models encode a marker through a linear predictor
+and therefore impose a monotone, multiplicative effect on the force of mortality;
+aggregate mortality models such as Lee--Carter operate at the population level and
+do not use individual marker dynamics at all. Capturing a U-shape within a
+proportional-hazards model requires \emph{ad hoc} basis expansions whose
+coefficients carry no direct interpretation, and none of these approaches makes
+use of the information in the \emph{dynamics} of a repeatedly measured marker:
+its trend, its volatility, and the speed with which it returns to equilibrium
+after a perturbation. Yet these dynamics are exactly what longitudinal insurance
+data---irregularly spaced, frequently missing---contain.
+
+The stochastic process model (SPM), or quadratic-hazard model, developed in
+biodemography \citep{WoodburyManton1977,Yashin2007,Yashin2012PLR} addresses these
+points directly. It couples a mean-reverting diffusion for the latent biomarker
+with a hazard that is \emph{quadratic} in the marker, so that risk is minimized at
+an age-varying ``optimal'' level and rises with deviation in either direction. The
+model's components have transparent risk interpretations: the location of the
+hazard minimum is a physiological optimum, the curvature measures sensitivity of
+risk to deviation, and the mean-reversion rate measures the organism's capacity to
+recover. The SPM has appeared in the actuarial literature
+\citep{Yashin2012NAAJ,Yashin2016NAAJ}, but exclusively in a frequentist form that
+yields point estimates and, at most, asymptotic standard errors.
+
+For the uses that matter most to insurers, point estimates are not enough.
+Biomarker-based underwriting and reserving feed quantities---risk margins under
+Solvency~II, the risk adjustment under IFRS~17, economic capital---that are
+fundamentally about \emph{uncertainty}, and the relevant uncertainty includes
+estimation and model uncertainty in components, such as the optimal level
+$\fzero(t)$, that are identified only indirectly from the data. A Bayesian
+treatment is the natural vehicle: it propagates this uncertainty coherently into
+every derived quantity, it regularizes weakly-identified components through
+priors, and---as we show---it is in fact \emph{necessary} for identifiability when
+the marker's risk is close to monotone, a regime in which the maximum-likelihood
+estimator degenerates.
+
+\paragraph{Contributions.} We make four contributions.
+\begin{enumerate}
+\item We give a Bayesian formulation of the quadratic-hazard SPM, built on the
+analytically marginalized likelihood (Proposition~\ref{prop:recursion}), so that
+no latent path need be sampled and inference is over a low-dimensional, fully
+interpretable parameter vector.
+\item We obtain \emph{credible bands} on the risk-minimizing trajectory
+$\fzero(t)$ and the latent risk components $Q(t)$ and $a(t)$, turning the model's
+indirectly-identified quantities into objects with calibrated uncertainty.
+\item We provide posterior-predictive, dynamically updated survival and hazard
+forecasts conditional on a partial biomarker history, and we translate these into
+actuarial summaries (survival by deviation from optimal; landmarked individual
+risk).
+\item We document an identifiability phenomenon of practical importance: on
+monotone-risk markers the maximum-likelihood estimator collapses the quadratic
+term, whereas weakly-informative priors recover a stable and interpretable fit.
+\end{enumerate}
+The methods are implemented in \texttt{R} using automatic differentiation
+(\texttt{RTMB}) and Hamiltonian Monte Carlo (\texttt{tmbstan})
+\citep{TMB2016,RTMB,tmbstan2018}, validated by simulation, and illustrated on the
+publicly available PBC data. A companion paper applies the methodology to the
+Cardiovascular Health Study under restricted access.
 
 %====================================================================
 \section{The model}\label{sec:model}
-The biomarker $Y(t)$ follows a mean-reverting diffusion
+
+Let $Y(t)$ denote a (transformed, standardized) biomarker at age $t$ for an
+individual, and let $T$ be the age at the event of interest (death, or onset of a
+morbidity). The latent marker follows a time-varying Ornstein--Uhlenbeck diffusion
 \begin{equation}\label{eq:sde}
-  \dd Y(t) = a(t)\,\bigl[Y(t)-f_1(t)\bigr]\,\dd t + b(t)\,\dd W(t),
+  \dd Y(t) = a(t)\,\bigl[Y(t)-\fone(t)\bigr]\,\dd t + b(t)\,\dd W(t),
+  \qquad Y(t_0)\sim \mathcal{N}\!\bigl(\fone(t_0),\sigma_0^2\bigr),
 \end{equation}
-and the force of mortality (or morbidity onset) is quadratic in the marker,
+with $W$ a standard Wiener process and $a(t)<0$ so that the process mean-reverts to
+the drift $\fone(t)$. The force of mortality is quadratic in the marker,
 \begin{equation}\label{eq:hazard}
-  \mu(t,Y) = \mu_0(t) + Q(t)\,\bigl[Y(t)-f_0(t)\bigr]^2 .
+  \mu(t,y) = \mu_0(t) + Q(t)\,\bigl[y-\fzero(t)\bigr]^2,
+  \qquad Q(t)>0 .
 \end{equation}
-% Actuarial interpretation: f0 = risk-minimizing ("optimal") level; Q =
-% sensitivity of risk to deviation (stress-resistance/robustness); a =
-% recovery rate (adaptive capacity); f1 = drift/allostatic mean; b = volatility.
-% State component parameterizations (linear-in-age etc.).
+
+Each component carries an actuarial interpretation.
+\begin{itemize}
+\item $\fzero(t)$ is the \emph{risk-minimizing level}: at any age, the hazard is
+smallest when the marker equals $\fzero(t)$. It is the ``optimal'' value an
+underwriter or wellness program would target, and it need not coincide with the
+population mean.
+\item $Q(t)$ is the \emph{curvature}, or sensitivity of risk to deviation from the
+optimum: a larger $Q$ means a narrower tolerance band and a steeper penalty for
+being off-target. In biodemographic terms it measures stress-resistance or
+robustness.
+\item $a(t)$ is the \emph{mean-reversion rate}: how quickly the marker returns to
+its drift after a shock, interpretable as recovery capacity or resilience.
+\item $\fone(t)$ is the \emph{drift} or equilibrium trajectory of the marker
+itself, and $b(t)$ its volatility. The gap $\fone(t)-\fzero(t)$ measures how far
+the typical trajectory sits from the optimum, and contributes directly to risk
+through \eqref{eq:hazard}.
+\item $\mu_0(t)$ is a baseline hazard capturing risk unrelated to the modelled
+marker.
+\end{itemize}
+
+For the illustrations we adopt parsimonious, age-linear forms anchored at a
+reference age $t_{\min}$,
+\begin{equation}\label{eq:components}
+\begin{aligned}
+  a(t) &= a_Y + b_Y\,(t-t_{\min}), & \fone(t) &= a_{f_1}+b_{f_1}(t-t_{\min}),\\
+  \fzero(t) &= a_{f_0}+b_{f_0}(t-t_{\min}), & Q(t) &= a_Q + b_Q\,(t-t_{\min}),\\
+  \mu_0(t) &= a_{\mu_0}\exp\!\{b_{\mu_0}(t-t_{\min})\}, & b(t)&\equiv\sigma_1,
+\end{aligned}
+\end{equation}
+with $a_Y<0$, $a_Q>0$, and a Gompertz-type baseline. Richer (spline or
+covariate-dependent) forms slot into the same machinery. Observations of the
+marker are made at irregular ages $t_1<\dots<t_n$ subject to measurement error,
+\begin{equation}\label{eq:obs}
+  y_j = Y(t_j) + \varepsilon_j, \qquad \varepsilon_j\sim\mathcal{N}(0,\tau^2),
+\end{equation}
+which nests the classical SPM (exact observations) as $\tau\to0$. Measurement
+error is realistic for insurance markers and, as a by-product, stabilizes the
+filtering recursion below.
 
 %====================================================================
 \section{The marginalized likelihood}\label{sec:lik}
+
+The model in \eqref{eq:sde}--\eqref{eq:obs} is a joint model of a longitudinal
+process and a time-to-event outcome, and its likelihood appears to require
+integration over the unobserved path $\{Y(t)\}$. The quadratic-Gaussian structure,
+however, makes this integral closed-form: conditional on survival and on the
+observations to date, the latent state stays Gaussian, and its mean and variance
+satisfy ordinary differential equations that already incorporate the
+survival-selection effect. This is the key to tractable Bayesian computation.
+
 \begin{proposition}\label{prop:recursion}
-% Conditional on survival and the observation history, the latent state remains
-% Gaussian with mean m(t), variance gamma(t) solving
-%   m'  = a(t)(m-f1) - 2 Q(t) gamma (m-f0),
-%   g'  = 2 a(t) gamma + b(t)^2 - 2 Q(t) gamma^2,
-% and the effective hazard given survival is mu0 + Q[(m-f0)^2 + gamma].
+Consider \eqref{eq:sde}--\eqref{eq:obs}. Between observation times, let $m(t)$ and
+$\gamma(t)$ denote the mean and variance of $Y(t)$ given survival to $t$ and the
+observations up to the most recent observation time. Then $Y(t)$ is conditionally
+Gaussian, $(m,\gamma)$ solve
+\begin{align}
+  m'(t)      &= a(t)\,[\,m(t)-\fone(t)\,] - 2\,Q(t)\,\gamma(t)\,[\,m(t)-\fzero(t)\,],
+               \label{eq:m}\\
+  \gamma'(t) &= 2\,a(t)\,\gamma(t) + b(t)^2 - 2\,Q(t)\,\gamma(t)^2,
+               \label{eq:g}
+\end{align}
+and the hazard of an individual known to be alive at $t$ with this conditional
+law---the \emph{effective hazard}---is
+\begin{equation}\label{eq:mubar}
+  \bar\mu(t) = \mu_0(t) + Q(t)\,\bigl\{[\,m(t)-\fzero(t)\,]^2 + \gamma(t)\bigr\}.
+\end{equation}
+At an observation $y_j$, writing $m^-,\gamma^-$ for the pre-observation moments,
+the predictive density is $y_j\sim\mathcal{N}(m^-,\gamma^-+\tau^2)$ and the moments
+update by the Kalman gain $K=\gamma^-/(\gamma^-+\tau^2)$,
+\begin{equation}\label{eq:update}
+  m^+ = m^- + K\,(y_j-m^-), \qquad \gamma^+ = (1-K)\,\gamma^-.
+\end{equation}
 \end{proposition}
-% Proof sketch / reference (Woodbury--Manton 1977; Yashin et al. 2007, 2012).
-% Observation update with measurement error tau (classic SPM = tau -> 0).
-% Likelihood contribution per subject; remark on irregular/missing data.
+
+A derivation via the killed Fokker--Planck equation and Gaussian closure is given
+in \ref{app:deriv}; see also \citet{WoodburyManton1977,Yashin2007}. Two points
+deserve emphasis for the actuary. First, \eqref{eq:g} shows the conditional
+variance is \emph{reduced} by the term $-2Q\gamma^2$: selection removes the more
+deviated (higher-risk) lives, so survivors are less dispersed than the marginal
+diffusion would suggest---an effect that a na\"ive two-stage analysis ignores.
+Second, \eqref{eq:mubar} adds $Q(t)\gamma(t)$ to the hazard evaluated at the
+filtered mean: uncertainty about the latent marker is itself a source of risk.
+
+Collecting terms, the contribution of one individual observed at $t_1<\dots<t_n$
+and then followed to an event or censoring age $T$ (event indicator $\delta$) is
+\begin{equation}\label{eq:loglik}
+  \log L = \sum_{j=1}^{n}\log\phi\!\bigl(y_j; m_j^-,\gamma_j^-+\tau^2\bigr)
+           \;-\;\int_{t_1}^{T}\bar\mu(s)\,\dd s
+           \;+\;\delta\,\log\bar\mu(T),
+\end{equation}
+with $\phi$ the normal density. Missing or irregular measurements require no
+special treatment: the recursion simply integrates \eqref{eq:m}--\eqref{eq:g}
+across whatever gap occurs and updates \eqref{eq:update} when a measurement is
+present. We evaluate \eqref{eq:m}--\eqref{eq:g} and the cumulative hazard with a
+fixed-step Runge--Kutta scheme between event/observation times.
 
 %====================================================================
 \section{Bayesian inference}\label{sec:bayes}
-% Priors (weakly-informative) and the identifiability argument: MLE collapses
-% the quadratic term on monotone-risk data (aQ -> 0, singular information);
-% priors restore a stable, interpretable posterior. Computation: HMC/NUTS on
-% the marginal log-posterior (RTMB objective via tmbstan). Model comparison:
-% WAIC/PSIS-LOO in place of AIC.
+
+Let $\theta$ collect the parameters of \eqref{eq:components} together with
+$\sigma_0,\sigma_1,\tau$ (positivity enforced by log-parameterization, and $a_Y<0$
+by sign constraint). The log-posterior is \eqref{eq:loglik} summed over individuals
+plus $\log p(\theta)$. Because \eqref{eq:loglik} is a smooth, deterministic
+function of $\theta$ once the recursion is unrolled, its gradient is available by
+automatic differentiation and the posterior is amenable to Hamiltonian Monte
+Carlo. We implement the log-likelihood once in \texttt{RTMB} and sample with the
+no-U-turn sampler via \texttt{tmbstan} \citep{RTMB,tmbstan2018}; the same objective
+yields the maximum-likelihood (or maximum-a-posteriori) estimate by quasi-Newton
+optimization, so frequentist and Bayesian fits share a single code path.
+
+\paragraph{Priors and identifiability.} We use weakly-informative, marginally
+proper priors: normal priors on the log-scale and slope parameters centered at
+neutral values with scales wide enough to be dominated by even modest data. These
+priors are not merely a Bayesian formality. The quadratic term in
+\eqref{eq:hazard} is identified by \emph{curvature} of risk in the marker; when the
+empirical risk is close to monotone over the observed range---as it is for many
+clinical markers---the curvature is weakly identified and the likelihood admits a
+degenerate ridge along which $Q\to0$ and $\fzero$ drifts off to infinity, with the
+hazard absorbed into the baseline $\mu_0$. Section~\ref{sec:pbc} exhibits exactly
+this collapse for the maximum-likelihood estimator on real data, and
+Section~\ref{sec:sim} shows it recurs in a small fraction of replicate fits even
+on data simulated with a genuine U-shape. A weakly-informative prior on
+$Q$ (and on the baseline slope) removes the degeneracy and returns a stable,
+interpretable posterior in which the optimum is estimated---with appropriately wide
+credible bands that honestly reflect how much the data constrain it. Model
+comparison across nested component specifications uses WAIC / PSIS-LOO in place of
+the AIC used in earlier frequentist SPM work.
 
 %====================================================================
 \section{Actuarial quantities}\label{sec:actuarial}
-% (a) Credible bands on f0(t): the optimal metric and its uncertainty.
-% (b) Posterior-predictive dynamic survival/hazard via landmarking.
-% (c) Survival / risk by deviation-from-optimal, with credible intervals.
-% Link each to an actuarial use: underwriting, reserving margin, wellness.
+
+The posterior over $\theta$ induces posteriors over every quantity an actuary
+would report; we highlight three.
+
+\paragraph{(a) The optimal level and its uncertainty.} The trajectory
+$\fzero(t)=a_{f_0}+b_{f_0}(t-t_{\min})$ is a linear functional of $\theta$, so its
+posterior is immediate and we summarize it by a median curve and a 95\% credible
+band (Figure~\ref{fig:f0sim}). This is the ``optimal health metric with
+uncertainty'': the value at which mortality risk is minimized at each age, together
+with a statement of how precisely it is known.
+
+\paragraph{(b) Risk by deviation from optimal.} For an individual maintained at a
+deviation $\delta$ (in marker standard deviations) from the optimum, the force of
+mortality is $\mu_0(t)+Q(t)\delta^2$ and the corresponding survival function
+$S_\delta(t)$ follows by integration; its posterior gives credible intervals for,
+e.g., the probability of surviving a fixed horizon. These quantities price the
+\emph{value of optimality} and the cost of deviation, inputs to wellness-incentive
+design and to portfolio-level what-if analysis.
+
+\paragraph{(c) Dynamic individual prediction.} Given a partial biomarker history to
+a landmark age, the filtering recursion \eqref{eq:m}--\eqref{eq:update} yields the
+conditional law of the latent state, and projecting \eqref{eq:mubar} forward gives
+the predictive survival curve $S(t\mid\text{history})$ with a credible band
+(Figure~\ref{fig:dyn}). This is the object required for dynamic underwriting and
+for updating reserves as new measurements arrive.
 
 %====================================================================
 \section{Simulation study}\label{sec:sim}
-% Parameter recovery; coverage/calibration of credible bands; the role of
-% priors for identifiability.
+
+We simulate cohorts from \eqref{eq:sde}--\eqref{eq:obs} on a standardized marker
+scale with $t_{\min}=65$, biennial measurements, administrative censoring at age
+$95$, and parameters chosen to give a clear U-shaped risk and a moderate event rate
+(43\% over follow-up; median 12 measurements per subject). Data are generated by a
+fine-grid Euler--Maruyama scheme with a competing-risk event draw at each step, and
+the marker is observed with measurement error---so the estimation target is
+recovered from realistically irregular series.
+
+\paragraph{Parameter recovery.} Table~\ref{tab:recovery} reports the
+maximum-likelihood fit to a cohort of $2000$ subjects. All thirteen parameters are
+recovered, with standardized errors within sampling tolerance; in particular the
+optimal-level intercept and slope $(a_{f_0},b_{f_0})$ are recovered essentially
+without bias. The baseline-hazard parameters are the least precisely estimated, as
+expected: they trade off against the quadratic term given a finite number of
+events.
+
+\begin{table}[t]\centering
+\caption{Maximum-likelihood recovery on a simulated cohort ($N=2000$). Estimates,
+standard errors, simulation truth, and standardized error
+$z=(\hat\theta-\theta)/\mathrm{SE}$.}
+\label{tab:recovery}
+\begin{tabular}{lrrrr}
+\toprule
+Parameter & Estimate & SE & Truth & $z$ \\
+\midrule
+$a_Y$ (resilience intercept)      & $-0.1521$ & $0.0048$ & $-0.1500$ & $-0.45$\\
+$b_Y$ (resilience slope)          & $ 0.0032$ & $0.0003$ & $ 0.0030$ & $ 0.75$\\
+$a_{f_1}$ (drift intercept)       & $-0.0319$ & $0.0219$ & $ 0.0000$ & $-1.46$\\
+$b_{f_1}$ (drift slope)           & $ 0.0237$ & $0.0018$ & $ 0.0200$ & $ 2.06$\\
+$a_{f_0}$ (optimal intercept)     & $ 0.0114$ & $0.0400$ & $ 0.0000$ & $ 0.29$\\
+$b_{f_0}$ (optimal slope)         & $-0.0002$ & $0.0021$ & $ 0.0000$ & $-0.10$\\
+$a_Q$ (curvature intercept)       & $ 0.0235$ & $0.0037$ & $ 0.0200$ & $ 0.94$\\
+$b_Q$ (curvature slope)           & $ 0.0017$ & $0.0003$ & $ 0.0015$ & $ 0.88$\\
+$a_{\mu_0}$ (baseline)            & $ 0.0007$ & $0.0009$ & $ 0.0010$ & $-0.34$\\
+$b_{\mu_0}$ (baseline slope)      & $ 0.0256$ & $0.0694$ & $ 0.0600$ & $-0.50$\\
+$\sigma_1$ (volatility)           & $ 0.2534$ & $0.0033$ & $ 0.2500$ & $ 1.04$\\
+$\sigma_0$ (initial SD)           & $ 1.0323$ & $0.0165$ & $ 1.0000$ & $ 1.96$\\
+$\tau$ (measurement SD)           & $ 0.0941$ & $0.0071$ & $ 0.1000$ & $-0.84$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Bayesian fit and credible bands.} Fitting the Bayesian model (no-U-turn
+sampler; two chains) gave clean diagnostics (no divergences, $\widehat R\le1.03$),
+and the 95\% credible band for $\fzero(t)$ covers the truth at every age, tightest
+in mid-age where measurements are densest and widening at the extremes
+(Figure~\ref{fig:f0sim}). The posterior also regularizes the baseline-hazard
+parameters that are weakly identified under maximum likelihood. The
+posterior-predictive survival by deviation from optimal (Table~\ref{tab:survdev})
+quantifies the steepness of the U-shape: maintaining the optimum yields a
+$0.99$ probability of surviving from age $65$ to $85$, falling to $0.40$ at one
+standard deviation and $0.03$ at two.
+
+\begin{table}[t]\centering
+\caption{Posterior-predictive probability of surviving from age 65 to 85 by
+deviation from the optimal marker level (median [95\% credible interval]),
+simulated cohort.}
+\label{tab:survdev}
+\begin{tabular}{lc}
+\toprule
+Scenario & $P(\text{survive }65\!\to\!85)$ \\
+\midrule
+Optimal (deviation $0$)        & $0.986\;[0.954,\,0.998]$\\
+Deviation $+0.5$ SD            & $0.784\;[0.749,\,0.816]$\\
+Deviation $+1.0$ SD            & $0.398\;[0.331,\,0.467]$\\
+Deviation $+1.5$ SD            & $0.129\;[0.085,\,0.185]$\\
+Deviation $+2.0$ SD            & $0.027\;[0.013,\,0.050]$\\
+Allostatic-mean path           & $0.931\;[0.892,\,0.960]$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]\centering
+\includegraphics[width=0.8\textwidth]{f0_credible_bands.png}
+\caption{Estimated optimal trajectory $\fzero(t)$ on the simulated cohort:
+Bayesian posterior median and 95\% credible band, the maximum-likelihood estimate
+with $\pm1.96$ standard-error envelope, and the simulation truth.}
+\label{fig:f0sim}
+\end{figure}
+
+\begin{figure}[t]\centering
+\includegraphics[width=0.95\textwidth]{dynamic_prediction.png}
+\caption{Dynamic prediction with landmarking at age 75: conditional survival
+$S(t\mid\text{history})$ with 95\% credible band for an individual with a deviated
+marker history (left, with subsequent event marked) and a near-optimal history
+(right, censored alive).}
+\label{fig:dyn}
+\end{figure}
+
+\paragraph{Calibration.} We assess calibration by a frequentist coverage study:
+$R=200$ cohorts of $N=500$ are simulated from the fixed truth, fit by maximum
+likelihood, and the empirical coverage of nominal $95\%$ Wald intervals is recorded
+for each parameter and for the $\fzero(t)$ band across the age grid
+(Table~\ref{tab:coverage}). Five fits ($2.5\%$) failed by driving the quadratic
+term to the boundary---the finite-sample manifestation of the identifiability
+degeneracy of Section~\ref{sec:bayes}, and direct evidence that the phenomenon is
+intrinsic to maximum likelihood rather than an artefact of any one dataset. Among
+the $195$ valid fits, coverage of the optimal trajectory $\fzero(t)$---the headline
+quantity---is at nominal across ages (pooled $0.951$). Coverage is likewise near
+nominal for the well-identified parameters; the weakly-identified curvature slope
+$b_Q$ ($0.86$) and baseline intercept $a_{\mu_0}$ ($0.90$) are mildly under-covered
+by the asymptotic intervals. These are exactly the components for which the
+posterior, regularized by weakly-informative priors, is better behaved and for
+which credible intervals replace the Wald approximation in practice---reinforcing,
+rather than undercutting, the case for the Bayesian treatment.
+
+\begin{table}[t]\centering
+\caption{Empirical coverage of nominal $95\%$ intervals over $195$ valid
+replicate fits ($N=500$ each; Monte Carlo standard errors in parentheses). Right
+block: coverage of the $\fzero(t)$ band by age.}
+\label{tab:coverage}
+\begin{tabular}{lc@{\hskip 2em}lc}
+\toprule
+Parameter & Coverage & $\fzero(t)$ at age & Coverage \\
+\midrule
+$a_Y$      & $0.944\ (0.017)$ & $65$ & $0.949\ (0.016)$\\
+$b_Y$      & $0.964\ (0.013)$ & $70$ & $0.949\ (0.016)$\\
+$a_{f_1}$  & $0.944\ (0.017)$ & $75$ & $0.959\ (0.014)$\\
+$b_{f_1}$  & $0.964\ (0.013)$ & $80$ & $0.974\ (0.011)$\\
+$a_{f_0}$  & $0.949\ (0.016)$ & $85$ & $0.964\ (0.013)$\\
+$b_{f_0}$  & $0.949\ (0.016)$ & $90$ & $0.938\ (0.017)$\\
+$a_Q$      & $0.949\ (0.016)$ & $95$ & $0.938\ (0.017)$\\
+$b_Q$      & $0.862\ (0.025)$ & \textit{pooled} & $\mathbf{0.951}$\\
+$a_{\mu_0}$& $0.897\ (0.022)$ & & \\
+$b_{\mu_0}$& $0.954\ (0.015)$ & & \\
+$\sigma_1$ & $0.923\ (0.019)$ & & \\
+$\sigma_0$ & $0.969\ (0.012)$ & & \\
+$\tau$     & $0.964\ (0.013)$ & & \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 %====================================================================
 \section{Illustration: longitudinal survival data}\label{sec:pbc}
-% PBC (survival::pbcseq): real, irregular, partially-missing data; MAP vs the
-% MLE collapse; estimated optimal marker trajectory on the natural scale.
-% Figure: pbc_f0_bilirubin.png.
+
+We illustrate the methodology on the Mayo Clinic primary biliary cholangitis
+(PBC) sequential data \citep[\texttt{survival::pbcseq};][]{Rizopoulos2016}, a
+standard public benchmark for joint longitudinal--survival modelling. We take
+log serum bilirubin (standardized) as the marker, death as the event, and age as
+the time scale; after restricting to subjects with at least two measurements the
+analysis comprises $285$ subjects, $122$ deaths, and $1918$ measurements (median
+six per subject) over ages $26$--$85$. Bilirubin is a severity marker whose risk
+is essentially monotone, providing a deliberate stress test of the model's
+behaviour away from a clean U-shape.
+
+The maximum-likelihood estimator collapses, exactly as anticipated in
+Section~\ref{sec:bayes}: the curvature is driven to the boundary
+($\hat a_Q\to0$), the information matrix is singular, and no standard errors are
+available. The maximum-a-posteriori fit under weakly-informative priors is stable
+and interpretable. It estimates a non-trivial mean-reversion
+($\hat a(t_{\min})=-0.027$, SE $0.011$) that weakens with age, a positive and
+age-increasing curvature ($\hat a_Q=0.020$, $\hat b_Q=0.0009$, SE $0.0003$), and an
+optimal bilirubin trajectory that sits at the low end of the observed range and
+declines with age---from roughly $1.5$\,mg/dL at age $26$ toward $0.4$\,mg/dL at
+$85$ (Figure~\ref{fig:pbc}). The credible band on $\fzero(t)$ is wide, correctly
+reflecting that a monotone-risk marker pins down only that the optimum is low, not
+its precise location. This is the desired behaviour: the model neither fabricates a
+spurious interior optimum nor breaks down, and it reports its own uncertainty.
+
+\begin{figure}[t]\centering
+\includegraphics[width=0.8\textwidth]{pbc_f0_bilirubin.png}
+\caption{PBC data: observed serum bilirubin (log scale) and the estimated
+risk-minimizing trajectory $\fzero(t)$ with 95\% band, on the natural (mg/dL)
+scale. The optimum tracks the low edge of the observed marker, as expected for a
+monotone-risk marker.}
+\label{fig:pbc}
+\end{figure}
 
 %====================================================================
 \section{Discussion}\label{sec:disc}
-% Risk margins (Solvency II) / risk adjustment (IFRS 17); wellness incentives;
-% limitations (single biomarker, parametric components); extensions
-% (multivariate markers, underwriting covariates, forecasting); pointer to the
-% CHS case study (companion paper).
+
+We have given a Bayesian quadratic-hazard stochastic process model for jointly
+modelling an irregularly measured biomarker and a time-to-event outcome, with the
+risk-minimizing level $\fzero(t)$, curvature $Q(t)$, and mean-reversion $a(t)$ as
+interpretable, uncertainty-quantified targets. The analytically marginalized
+likelihood makes Bayesian computation routine, and the resulting credible bands and
+posterior-predictive forecasts speak directly to actuarial needs.
+
+\paragraph{Relation to existing approaches.} The model differs from the dominant
+shared-random-effects joint models, which posit a \emph{linear} marker effect on
+the log-hazard, and from flexible Bayesian additive joint models that admit
+nonlinear associations through penalized splines: the latter can represent a
+U-shape but yield a free-form smooth with no single, named optimum and no
+structural separation of optimum, curvature, and recovery. Our contribution is the
+interpretable, structured parametrization---and credible bands directly on its
+components---rather than nonlinearity \emph{per se}. Within the actuarial
+literature it provides the Bayesian counterpart to the frequentist SPM
+\citep{Yashin2012NAAJ,Yashin2016NAAJ}.
+
+\paragraph{Actuarial implications.} The framework supplies, for a biomarker-exposed
+portfolio, both a central estimate and a coherent uncertainty for each individual's
+risk. This is the input to a Solvency~II risk margin (cost-of-capital on
+non-hedgeable biometric risk) and to the IFRS~17 risk adjustment; it supports
+dynamic underwriting, in which risk is re-evaluated as measurements arrive; and it
+formalizes wellness-incentive design through the estimated optimum and the priced
+cost of deviation in Table~\ref{tab:survdev}.
+
+\paragraph{Limitations and extensions.} We modelled a single biomarker with
+age-linear components; multivariate markers, covariate-dependent components (for
+underwriting factors and genetic risk), nonsymmetric U-shapes, and calendar-time or
+cohort effects for forecasting are natural and fit within the same marginalized
+likelihood. Scaling the sampler to large portfolios benefits from vectorizing the
+per-individual recursion. The companion paper applies the methodology to the
+Cardiovascular Health Study, where the marker (BMI, blood pressure, or glucose)
+exhibits a genuine U-shape and a genetic underwriting factor is available.
+
+%====================================================================
+\appendix
+\section{Derivation of the moment recursion}\label{app:deriv}
+
+Let $p(y,t)$ be the sub-density of the latent marker among individuals alive at
+$t$ with a given observation history. Between observations $p$ evolves by the
+Fokker--Planck equation of \eqref{eq:sde} with a killing term from the hazard
+\eqref{eq:hazard},
+\begin{equation}\label{eq:fp}
+  \partial_t p = -\partial_y\!\bigl[a(t)(y-\fone(t))\,p\bigr]
+                 + \tfrac12 b(t)^2\,\partial_{yy}p
+                 - \mu(t,y)\,p .
+\end{equation}
+Write $p(y,t)=c(t)\,\phi(y;m(t),\gamma(t))$ for a normalizing constant $c(t)$ (the
+conditional survival). Substituting a Gaussian and matching the coefficients of
+$1$, $(y-m)$, and $(y-m)^2$ on both sides of \eqref{eq:fp}---using that
+$\mu(t,y)$ is quadratic in $y$, so the killing term preserves the Gaussian
+form---gives the moment equations \eqref{eq:m}--\eqref{eq:g} together with
+$c'(t)/c(t)=-\bar\mu(t)$ with $\bar\mu$ as in \eqref{eq:mubar}; integrating the last
+relation yields the survival factor in \eqref{eq:loglik}. At an observation, Bayes'
+rule for a Gaussian prior $\mathcal{N}(m^-,\gamma^-)$ and Gaussian likelihood
+\eqref{eq:obs} gives the update \eqref{eq:update} and the predictive density
+$\mathcal{N}(m^-,\gamma^-+\tau^2)$. See \citet{WoodburyManton1977} and
+\citet{Yashin2007} for the original treatments. \qed
 
 %====================================================================
 \section*{Acknowledgements}
